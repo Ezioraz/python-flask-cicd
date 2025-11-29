@@ -8,7 +8,7 @@ pipeline {
         IMAGE_TAG       = "latest"
         ECR_REPO        = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPO_NAME}"
 
-        EC2_HOST        = "ec2-user@35.154.145.45"
+        EC2_HOST        = "ubuntu@35.154.145.45"   // FIXED HERE
         CONTAINER_NAME  = "flask-cicd-app"
     }
 
@@ -49,7 +49,7 @@ pipeline {
             steps {
                 sh """
                 ssh -o StrictHostKeyChecking=no ${EC2_HOST} '
-                  docker login -u AWS -p $(aws ecr get-login-password --region ${AWS_REGION}) ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com && \
+                  docker login -u AWS -p $(aws ecr.get-login-password --region ${AWS_REGION}) ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com && \
                   docker pull ${ECR_REPO}:${IMAGE_TAG} && \
                   docker stop ${CONTAINER_NAME} || true && \
                   docker rm ${CONTAINER_NAME} || true && \
