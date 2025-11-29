@@ -6,7 +6,7 @@ pipeline {
         AWS_ACCOUNT_ID  = "447407244516"
         REPO_NAME       = "flask-cicd-app"
 
-        // Use Jenkins build number for version tags
+        // Versioned tag using Jenkins build number
         IMAGE_TAG       = "${BUILD_NUMBER}"
 
         ECR_REPO        = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPO_NAME}"
@@ -53,12 +53,12 @@ pipeline {
             steps {
                 sh """
                 ssh -o StrictHostKeyChecking=no ${EC2_HOST} << 'EOF'
-                    docker login -u AWS -p \$(aws ecr get-login-password --region ${AWS_REGION}) ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
-                    docker pull ${ECR_REPO}:${IMAGE_TAG}
-                    docker stop ${CONTAINER_NAME} || true
-                    docker rm ${CONTAINER_NAME} || true
-                    docker run -d --name ${CONTAINER_NAME} -p 80:5000 ${ECR_REPO}:${IMAGE_TAG}
-                EOF
+docker login -u AWS -p \$(aws ecr get-login-password --region ${AWS_REGION}) ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+docker pull ${ECR_REPO}:${IMAGE_TAG}
+docker stop ${CONTAINER_NAME} || true
+docker rm ${CONTAINER_NAME} || true
+docker run -d --name ${CONTAINER_NAME} -p 80:5000 ${ECR_REPO}:${IMAGE_TAG}
+EOF
                 """
             }
         }
