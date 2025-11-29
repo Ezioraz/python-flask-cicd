@@ -1,0 +1,71 @@
+pipeline {
+    agent any
+
+    environment {
+        AWS_REGION      = "ap-south-1"
+        AWS_ACCOUNT_ID  = "447407244516"
+        REPO_NAME       = "flask-cicd-app"
+        IMAGE_TAG       = "latest"
+        ECR_REPO        = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPO_NAME}"
+
+        EC2_HOST        = "ec2-user@35.154.145.45"
+        CONTAINER_NAME  = "flask-cicd-app"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                sh """
+                docker build -t ${REPO_NAME}:${IMAGE_TAG} .
+                """
+            }
+        }
+
+        stage('ECR Login') {
+            steps {
+                sh """
+                aws ecr get-login-password --region ${AWS_REGION} \
+                | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                """
+            }
+        }
+
+        stage('Tag & Push Image') {
+            steps {
+                sh """
+                docker tag ${REPO_NAME}:${IMAGE_TAG} ${ECR_REPO}:${IMAGE_TAG}
+                docker push ${ECR_REPO}:${IMAGE_TAG}
+                """
+            }
+        }
+
+        stage('Deploy to EC2') {
+            steps {
+                sh """
+                ssh -o StrictHostKeyChecking=no ${EC2_HOST} '
+                  docker login -u AWS -p $(aws ecr get-login-password --region ${AWS_REGION}) ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com && \
+                  docker pull ${ECR_REPO}:${IMAGE_TAG} && \
+                  docker stop ${CONTAINER_NAME} || true && \
+                  docker rm ${CONTAINER_NAME} || true && \
+                  docker run -d --name ${CONTAINER_NAME} -p 80:5000 ${ECR_REPO}:${IMAGE_TAG}
+                '
+                """
+            }
+        }
+    }
+
+    post {
+        failure {
+            echo "Pipeline failed. Fix the error properly instead of guessing."
+        }
+        success {
+            echo "Deployed successfully → http://35.154.145.45/"
+        }
+    }
+}
