@@ -8,7 +8,7 @@ pipeline {
         IMAGE_TAG       = "latest"
         ECR_REPO        = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPO_NAME}"
 
-        EC2_HOST        = "ubuntu@35.154.145.45"   // FIXED HEREd
+        EC2_HOST        = "ubuntu@35.154.145.45"
         CONTAINER_NAME  = "flask-cicd-app"
     }
 
@@ -48,13 +48,13 @@ pipeline {
         stage('Deploy to EC2') {
             steps {
                 sh """
-                ssh -o StrictHostKeyChecking=no ${EC2_HOST} '
-                  docker login -u AWS -p $(aws ecr.get-login-password --region ${AWS_REGION}) ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com && \
-                  docker pull ${ECR_REPO}:${IMAGE_TAG} && \
-                  docker stop ${CONTAINER_NAME} || true && \
-                  docker rm ${CONTAINER_NAME} || true && \
-                  docker run -d --name ${CONTAINER_NAME} -p 80:5000 ${ECR_REPO}:${IMAGE_TAG}
-                '
+                ssh -o StrictHostKeyChecking=no ${EC2_HOST} "\
+                    docker login -u AWS -p \$(aws ecr get-login-password --region ${AWS_REGION}) ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com && \
+                    docker pull ${ECR_REPO}:${IMAGE_TAG} && \
+                    docker stop ${CONTAINER_NAME} || true && \
+                    docker rm ${CONTAINER_NAME} || true && \
+                    docker run -d --name ${CONTAINER_NAME} -p 80:5000 ${ECR_REPO}:${IMAGE_TAG} \
+                "
                 """
             }
         }
@@ -62,7 +62,7 @@ pipeline {
 
     post {
         failure {
-            echo "Pipeline failed. Fix the error properly instead of guessing."
+            echo "Pipeline failed."
         }
         success {
             echo "Deployed successfully → http://35.154.145.45/"
